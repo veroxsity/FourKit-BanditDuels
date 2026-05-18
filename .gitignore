@@ -10,7 +10,7 @@ obj/
 # JetBrains
 .idea/
 
-# VS Code (per-developer)
+# VS Code
 .vscode/
 
 # OS
@@ -18,7 +18,9 @@ obj/
 Thumbs.db
 desktop.ini
 
-# Local
+# Logs
 *.log
+
+# Local environment
 .env
 *.local

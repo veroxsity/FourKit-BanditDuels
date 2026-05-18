@@ -1,30 +1,30 @@
 ﻿# FourKit-BanditDuels
 
-Full 1v1 duels system for FourKit servers running Minecraft Legacy Console Edition. Kits, arenas, queue, stats, lobby protection, private duel chat - the lot.
+Full-featured 1v1 duel plugin for FourKit servers running Minecraft Legacy Console Edition. Configurable kits, randomised arena selection, queue system, persistent stats, lobby protection, and isolated duel chat.
 
 ## Features
 
-- **Multiple kits** - classic, fist, nodebuff, op, pot, soup, uhc (JSON-defined, drop a file in `DefaultKits/` to add more)
-- **Random arena selection** - free arenas are chosen uniformly so a fresh server can give you forest or ice on match 1
-- **Queue system** - players queue per-kit; the manager pairs them as arenas free up
-- **Stats tracking** - wins/losses persisted in `stats.json`, queryable per kit and per player
-- **Lobby protection** - block break/place/interact/drop suppressed for non-admins inside the lobby AABB, with a 10-block margin for reach attacks
-- **Lobby comfort** - full HP/food refresh every half-second, fall damage cancelled, time/weather locked to noon clear
-- **Private duel chat** - duelists only see chat from their opponent; lobby chat doesn't leak in
-- **Admin chat override** - configurable `AdminsSeeAllChat` toggle lets staff monitor everything
-- **Auto arena reset** - blocks broken or modified during a fight are restored from a snapshot when the match ends
-- **Mob culling** - non-player mobs periodically teleported to the void to keep arenas clean
-- **Match guards** - escape detection (pearling out), forfeit-on-quit, 5-minute time-cap draws
+- **JSON-defined kits** loaded from `DefaultKits/*.json` and seeded to `plugins/BanditDuels-data/kits/` on first run. Drop a new JSON in, restart, and it's available.
+- **Random arena selection** from configurable templates. Default setup ships 5 forest + 5 ice arenas; matches pick uniformly at random from the free pool.
+- **Lobby** with safe spawn, fall damage cancel, hunger/health refresh every tick, periodic boundary enforcement.
+- **Block protection** with admin bypass: turn protection on and admins can still edit while regular players are blocked.
+- **Isolated duel chat**: duelists only see chat from their match opponent; lobby chat stays in the lobby. Optional `AdminsSeeAllChat` toggle for moderation.
+- **Stats** tracked per kit (wins/losses, end reason, duration) in `stats.json`.
+- **Match queue**: `/duel queue <kit>` pairs you with the next joiner. Auto-removed if you challenge someone or accept a request.
+- **Arena reset**: block snapshots restored after every match so each fight starts on pristine terrain.
+- **World keeper**: locks time to noon, optional periodic mob culling.
 
 ## Installation
 
-1. Build (see below) or grab the latest `BanditDuels.dll` from Releases
-2. Drop it into `<server>/plugins/`
-3. Restart the server
+```powershell
+.\build.ps1 -StopServer
+```
+
+The plugin bundles SQLite via embedded resources. No external dependencies to install.
 
 ## Configuration
 
-`plugins/BanditDuels-data/config.json` is generated on first run:
+`plugins/BanditDuels-data/config.json`:
 
 ```json
 {
@@ -40,36 +40,29 @@ Full 1v1 duels system for FourKit servers running Minecraft Legacy Console Editi
 }
 ```
 
-Arenas live in `arenas.json` - templates with grid columns for repeating layouts. Admins are in `admins.json`.
+Other data files in `plugins/BanditDuels-data/`:
 
-Kits are JSON files under `plugins/BanditDuels-data/kits/` - one per kit. To add a new kit, drop a file in there and restart.
+- `arenas.json` - arena templates (per kit grid expansion)
+- `admins.json` - admin list (one name per line entry)
+- `kits/*.json` - kit definitions
+- `lobby.json` - lobby bounds and spawn
+- `stats.json` - match history
 
 ## Commands
 
-| Command | Description |
-|---|---|
-| `/duel <player> <kit>` | Send a challenge |
-| `/duel accept <player>` | Accept an incoming challenge |
-| `/duel deny <player>` | Decline an incoming challenge |
-| `/duel queue <kit>` | Join the auto-matching queue for a kit |
-| `/duel leave` | Leave queue or forfeit your active match |
-| `/duel stats [player]` | Show win/loss stats |
-| `/duel kits` | List available kits |
-| `/duel arenas` | List arenas and current busy state |
-| `/duel admin ...` | Admin subcommands (lobby setup, region bounds, force-end, lobbyguard toggle) |
-## Building from source
+- `/duel <player> <kit>` - challenge a player
+- `/duel accept <player>` / `/duel deny <player>`
+- `/duel queue <kit>` - join the matchmaking queue for a kit
+- `/duel queue leave` - leave the queue
+- `/duel stats [player]` - view stats
+- `/duel kits` - list available kits
+- `/duel admin setup` - interactive setup for lobby bounds, spawn, arenas
+- `/duel admin lobbyguard on|off` - toggle lobby block protection
+- `/duel admin add <player>` - add an admin
 
-Requires .NET 10 SDK.
+## Adding a kit
 
-```powershell
-.\build.ps1 -StopServer
-```
-
-The script auto-stops a running `Minecraft.Server.exe`, builds in Release mode, and copies the DLL to `..\..\Server\plugins\`. Or build manually:
-
-```powershell
-dotnet build -c Release
-```
+Drop a JSON file in `Plugins/BanditDuels/DefaultKits/` matching the existing schema (see `classic.json` as reference). Rebuild and ship. Existing servers won't be affected unless they delete their `kits/` folder; new servers seed all defaults on first run.
 
 ## License
 
