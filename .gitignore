@@ -24,3 +24,6 @@ desktop.ini
 # Local environment
 .env
 *.local
+
+# Local-only documentation, scratch files, anything not for the repo
+.Untracked/
