@@ -1,0 +1,74 @@
+﻿{
+    "Id":  "classic",
+    "DisplayName":  "Classic",
+    "Helmet":  {
+                   "Material":  "IRON_HELMET",
+                   "Amount":  1,
+                   "Durability":  0,
+                   "DisplayName":  null,
+                   "Lore":  null,
+                   "Enchantments":  null
+               },
+    "Chestplate":  {
+                       "Material":  "IRON_CHESTPLATE",
+                       "Amount":  1,
+                       "Durability":  0,
+                       "DisplayName":  null,
+                       "Lore":  null,
+                       "Enchantments":  null
+                   },
+    "Leggings":  {
+                     "Material":  "IRON_LEGGINGS",
+                     "Amount":  1,
+                     "Durability":  0,
+                     "DisplayName":  null,
+                     "Lore":  null,
+                     "Enchantments":  null
+                 },
+    "Boots":  {
+                  "Material":  "IRON_BOOTS",
+                  "Amount":  1,
+                  "Durability":  0,
+                  "DisplayName":  null,
+                  "Lore":  null,
+                  "Enchantments":  null
+              },
+    "Inventory":  [
+                      {
+                          "Slot":  0,
+                          "Material":  "BOW",
+                          "Amount":  1,
+                          "Durability":  0,
+                          "DisplayName":  null,
+                          "Lore":  null,
+                          "Enchantments":  null
+                      },
+                      {
+                          "Slot":  1,
+                          "Material":  "IRON_SWORD",
+                          "Amount":  1,
+                          "Durability":  0,
+                          "DisplayName":  null,
+                          "Lore":  null,
+                          "Enchantments":  null
+                      },
+                      {
+                          "Slot":  2,
+                          "Material":  "BREAD",
+                          "Amount":  16,
+                          "Durability":  0,
+                          "DisplayName":  null,
+                          "Lore":  null,
+                          "Enchantments":  null
+                      },
+                      {
+                          "Slot":  8,
+                          "Material":  "ARROW",
+                          "Amount":  64,
+                          "Durability":  0,
+                          "DisplayName":  null,
+                          "Lore":  null,
+                          "Enchantments":  null
+                      }
+                  ]
+}

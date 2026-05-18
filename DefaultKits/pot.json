@@ -1,0 +1,180 @@
+{
+  "Id": "pot",
+  "DisplayName": "HCF Pot",
+  "Helmet": {
+    "Material": "DIAMOND_HELMET",
+    "Amount": 1,
+    "Durability": 0,
+    "DisplayName": null,
+    "Lore": null,
+    "Enchantments": [
+      {
+        "Type": "PROTECTION_ENVIRONMENTAL",
+        "Level": 4
+      }
+    ]
+  },
+  "Chestplate": {
+    "Material": "DIAMOND_CHESTPLATE",
+    "Amount": 1,
+    "Durability": 0,
+    "DisplayName": null,
+    "Lore": null,
+    "Enchantments": [
+      {
+        "Type": "PROTECTION_ENVIRONMENTAL",
+        "Level": 4
+      }
+    ]
+  },
+  "Leggings": {
+    "Material": "DIAMOND_LEGGINGS",
+    "Amount": 1,
+    "Durability": 0,
+    "DisplayName": null,
+    "Lore": null,
+    "Enchantments": [
+      {
+        "Type": "PROTECTION_ENVIRONMENTAL",
+        "Level": 4
+      }
+    ]
+  },
+  "Boots": {
+    "Material": "DIAMOND_BOOTS",
+    "Amount": 1,
+    "Durability": 0,
+    "DisplayName": null,
+    "Lore": null,
+    "Enchantments": [
+      {
+        "Type": "PROTECTION_ENVIRONMENTAL",
+        "Level": 4
+      }
+    ]
+  },
+  "Inventory": [
+    {
+      "Slot": 0,
+      "Material": "DIAMOND_SWORD",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": [
+        {
+          "Type": "DAMAGE_ALL",
+          "Level": 1
+        }
+      ]
+    },
+    {
+      "Slot": 1,
+      "Material": "POTION",
+      "Amount": 1,
+      "Durability": 16453,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 2,
+      "Material": "POTION",
+      "Amount": 1,
+      "Durability": 16453,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 3,
+      "Material": "POTION",
+      "Amount": 1,
+      "Durability": 16453,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 4,
+      "Material": "POTION",
+      "Amount": 1,
+      "Durability": 16453,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 5,
+      "Material": "POTION",
+      "Amount": 1,
+      "Durability": 16453,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 6,
+      "Material": "POTION",
+      "Amount": 1,
+      "Durability": 16453,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 7,
+      "Material": "POTION",
+      "Amount": 1,
+      "Durability": 16453,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 8,
+      "Material": "POTION",
+      "Amount": 1,
+      "Durability": 16453,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 9,
+      "Material": "POTION",
+      "Amount": 1,
+      "Durability": 16453,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 10,
+      "Material": "POTION",
+      "Amount": 1,
+      "Durability": 16453,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 11,
+      "Material": "POTION",
+      "Amount": 1,
+      "Durability": 16453,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 12,
+      "Material": "POTION",
+      "Amount": 1,
+      "Durability": 16453,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>BanditDuels</RootNamespace>
+    <AssemblyName>BanditDuels</AssemblyName>
+
+    <!-- Pinned versions also used in the EmbeddedResource paths below. Keep
+         these in sync with the PackageReference versions. -->
+    <MdsCoreVer>9.0.0</MdsCoreVer>
+    <PclRawVer>2.1.10</PclRawVer>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Minecraft.Server.FourKit">
+      <HintPath>lib\Minecraft.Server.FourKit.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="$(MdsCoreVer)" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="$(PclRawVer)" />
+    <PackageReference Include="SQLitePCLRaw.core" Version="$(PclRawVer)" />
+    <PackageReference Include="SQLitePCLRaw.provider.e_sqlite3" Version="$(PclRawVer)" />
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="$(PclRawVer)" />
+  </ItemGroup>
+
+  <!-- Embed the managed SQLite assemblies and the win-x64 native binary as
+       resources in BanditDuels.dll. BundleLoader.cs reads these at runtime.
+
+       Paths are resolved against $(NuGetPackageRoot) which is set by the SDK
+       at item-evaluation time (unlike Pkg* properties which only become
+       available inside a target). Using literal version numbers means we
+       avoid the timing problem entirely. -->
+  <ItemGroup>
+    <EmbeddedResource Include="$(NuGetPackageRoot)microsoft.data.sqlite.core\$(MdsCoreVer)\lib\netstandard2.0\Microsoft.Data.Sqlite.dll">
+      <LogicalName>BanditDuels.Bundled.Microsoft.Data.Sqlite.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)sqlitepclraw.core\$(PclRawVer)\lib\netstandard2.0\SQLitePCLRaw.core.dll">
+      <LogicalName>BanditDuels.Bundled.SQLitePCLRaw.core.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)sqlitepclraw.bundle_e_sqlite3\$(PclRawVer)\lib\netstandard2.0\SQLitePCLRaw.batteries_v2.dll">
+      <LogicalName>BanditDuels.Bundled.SQLitePCLRaw.batteries_v2.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)sqlitepclraw.provider.e_sqlite3\$(PclRawVer)\lib\netstandard2.0\SQLitePCLRaw.provider.e_sqlite3.dll">
+      <LogicalName>BanditDuels.Bundled.SQLitePCLRaw.provider.e_sqlite3.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)sqlitepclraw.lib.e_sqlite3\$(PclRawVer)\runtimes\win-x64\native\e_sqlite3.dll">
+      <LogicalName>BanditDuels.Bundled.e_sqlite3.dll</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- Default kit JSONs. Embedded as resources so the plugin can write them
+       out to plugins/BanditDuels-data/kits/ on first run. To add a new
+       default kit: drop a JSON file into DefaultKits/ and rebuild - the glob
+       picks it up automatically, no source edit needed. The LogicalName
+       pattern matches KitLoader's "BanditDuels.DefaultKits." prefix scan. -->
+  <ItemGroup>
+    <EmbeddedResource Include="DefaultKits\*.json">
+      <LogicalName>BanditDuels.DefaultKits.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>

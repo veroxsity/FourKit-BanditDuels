@@ -1,0 +1,24 @@
+﻿# .NET build outputs
+bin/
+obj/
+*.user
+*.suo
+
+# Visual Studio
+.vs/
+
+# JetBrains
+.idea/
+
+# VS Code (per-developer)
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local
+*.log
+.env
+*.local

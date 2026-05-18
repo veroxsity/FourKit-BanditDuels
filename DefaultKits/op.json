@@ -1,0 +1,108 @@
+﻿{
+    "Id":  "op",
+    "DisplayName":  "OP",
+    "Helmet":  {
+                   "Material":  "DIAMOND_HELMET",
+                   "Amount":  1,
+                   "Durability":  0,
+                   "DisplayName":  null,
+                   "Lore":  null,
+                   "Enchantments":  [
+                                        {
+                                            "Type":  "PROTECTION_ENVIRONMENTAL",
+                                            "Level":  4
+                                        }
+                                    ]
+               },
+    "Chestplate":  {
+                       "Material":  "DIAMOND_CHESTPLATE",
+                       "Amount":  1,
+                       "Durability":  0,
+                       "DisplayName":  null,
+                       "Lore":  null,
+                       "Enchantments":  [
+                                            {
+                                                "Type":  "PROTECTION_ENVIRONMENTAL",
+                                                "Level":  4
+                                            }
+                                        ]
+                   },
+    "Leggings":  {
+                     "Material":  "DIAMOND_LEGGINGS",
+                     "Amount":  1,
+                     "Durability":  0,
+                     "DisplayName":  null,
+                     "Lore":  null,
+                     "Enchantments":  [
+                                          {
+                                              "Type":  "PROTECTION_ENVIRONMENTAL",
+                                              "Level":  4
+                                          }
+                                      ]
+                 },
+    "Boots":  {
+                  "Material":  "DIAMOND_BOOTS",
+                  "Amount":  1,
+                  "Durability":  0,
+                  "DisplayName":  null,
+                  "Lore":  null,
+                  "Enchantments":  [
+                                       {
+                                           "Type":  "PROTECTION_ENVIRONMENTAL",
+                                           "Level":  4
+                                       }
+                                   ]
+              },
+    "Inventory":  [
+                      {
+                          "Slot":  0,
+                          "Material":  "DIAMOND_SWORD",
+                          "Amount":  1,
+                          "Durability":  0,
+                          "DisplayName":  null,
+                          "Lore":  null,
+                          "Enchantments":  [
+                                               {
+                                                   "Type":  "DAMAGE_ALL",
+                                                   "Level":  5
+                                               }
+                                           ]
+                      },
+                      {
+                          "Slot":  1,
+                          "Material":  "GOLDEN_APPLE",
+                          "Amount":  8,
+                          "Durability":  1,
+                          "DisplayName":  null,
+                          "Lore":  null,
+                          "Enchantments":  null
+                      },
+                      {
+                          "Slot":  2,
+                          "Material":  "GOLDEN_APPLE",
+                          "Amount":  16,
+                          "Durability":  0,
+                          "DisplayName":  null,
+                          "Lore":  null,
+                          "Enchantments":  null
+                      },
+                      {
+                          "Slot":  3,
+                          "Material":  "ENDER_PEARL",
+                          "Amount":  8,
+                          "Durability":  0,
+                          "DisplayName":  null,
+                          "Lore":  null,
+                          "Enchantments":  null
+                      },
+                      {
+                          "Slot":  8,
+                          "Material":  "ARROW",
+                          "Amount":  32,
+                          "Durability":  0,
+                          "DisplayName":  null,
+                          "Lore":  null,
+                          "Enchantments":  null
+                      }
+                  ]
+}

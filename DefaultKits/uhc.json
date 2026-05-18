@@ -1,0 +1,119 @@
+{
+  "Id": "uhc",
+  "DisplayName": "Diamond UHC",
+  "Helmet": {
+    "Material": "DIAMOND_HELMET",
+    "Amount": 1,
+    "Durability": 0,
+    "DisplayName": null,
+    "Lore": null,
+    "Enchantments": null
+  },
+  "Chestplate": {
+    "Material": "DIAMOND_CHESTPLATE",
+    "Amount": 1,
+    "Durability": 0,
+    "DisplayName": null,
+    "Lore": null,
+    "Enchantments": null
+  },
+  "Leggings": {
+    "Material": "DIAMOND_LEGGINGS",
+    "Amount": 1,
+    "Durability": 0,
+    "DisplayName": null,
+    "Lore": null,
+    "Enchantments": null
+  },
+  "Boots": {
+    "Material": "DIAMOND_BOOTS",
+    "Amount": 1,
+    "Durability": 0,
+    "DisplayName": null,
+    "Lore": null,
+    "Enchantments": null
+  },
+  "Inventory": [
+    {
+      "Slot": 0,
+      "Material": "DIAMOND_SWORD",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 1,
+      "Material": "FISHING_ROD",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 2,
+      "Material": "BOW",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 3,
+      "Material": "GOLDEN_APPLE",
+      "Amount": 5,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 4,
+      "Material": "ENDER_PEARL",
+      "Amount": 16,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 5,
+      "Material": "WATER_BUCKET",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 6,
+      "Material": "COBBLESTONE",
+      "Amount": 64,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 7,
+      "Material": "BREAD",
+      "Amount": 16,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 8,
+      "Material": "ARROW",
+      "Amount": 64,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    }
+  ]
+}

@@ -1,0 +1,163 @@
+{
+  "Id": "soup",
+  "DisplayName": "Soup",
+  "Helmet": null,
+  "Chestplate": null,
+  "Leggings": null,
+  "Boots": null,
+  "Inventory": [
+    {
+      "Slot": 0,
+      "Material": "STONE_SWORD",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 1,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 2,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 3,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 4,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 5,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 6,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 7,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 8,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 9,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 10,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 11,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 12,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 13,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 14,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 15,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    },
+    {
+      "Slot": 16,
+      "Material": "MUSHROOM_SOUP",
+      "Amount": 1,
+      "Durability": 0,
+      "DisplayName": null,
+      "Lore": null,
+      "Enchantments": null
+    }
+  ]
+}
