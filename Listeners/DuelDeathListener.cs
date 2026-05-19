@@ -22,7 +22,7 @@ public sealed class DuelDeathListener : Listener
         e.setDroppedExp(0);
         e.setKeepInventory(true);     // we'll reset via snapshot anyway
         e.setKeepLevel(true);
-        e.setDeathMessage("§c" + match.nameOf(player.getUniqueId()) + " §7was defeated by §e" + match.otherNameOf(player.getUniqueId()) + "§7.");
+        e.setDeathMessage("§c" + match.nameOf(player.getUniqueId()) + " §7was defeated by §e" + match.opponentsLabelOf(player.getUniqueId()) + "§7.");
 
         _duels.endMatchByDeath(match, player.getUniqueId());
     }

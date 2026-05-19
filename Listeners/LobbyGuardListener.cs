@@ -67,6 +67,15 @@ public sealed class LobbyGuardListener : Listener
             && z >= c.BoundsMinZ - BlockGuardMargin && z <= c.BoundsMaxZ + BlockGuardMargin;
     }
 
+    private bool isInsideLobbyFootprint(string worldName, int x, int z)
+    {
+        if (!_lobby.HasBounds) return false;
+        var c = _lobby.Config;
+        if (!string.Equals(worldName, c.WorldName, StringComparison.Ordinal)) return false;
+        return x >= c.BoundsMinX && x <= c.BoundsMaxX
+            && z >= c.BoundsMinZ && z <= c.BoundsMaxZ;
+    }
+
     /// <summary>Start the periodic boundary check (called from plugin onEnable).</summary>
     public void start(BanditDuels plugin)
     {
@@ -316,10 +325,10 @@ public sealed class LobbyGuardListener : Listener
     }
 
     /// <summary>
-    /// Cancel fall damage for players inside the lobby AABB who aren't currently
-    /// in a duel. Lobby is a safe area; parkour falls and missed jumps shouldn't
-    /// hurt. Other damage causes (PvP, void, etc.) are handled elsewhere or
-    /// covered by the periodic full-health refresh.
+    /// Cancel fall damage for players inside the lobby footprint who aren't
+    /// currently in a duel. Fall damage lands can be below the configured
+    /// vertical AABB, so this uses X/Z bounds only while still requiring the
+    /// lobby world.
     /// </summary>
     [EventHandler(Priority = EventPriority.High)]
     public void onDamage(EntityDamageEvent e)
@@ -332,7 +341,7 @@ public sealed class LobbyGuardListener : Listener
         var loc = p.getLocation();
         var world = loc.getWorld();
         if (world == null) return;
-        if (!_lobby.isInside(world.getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())) return;
+        if (!isInsideLobbyFootprint(world.getName(), loc.getBlockX(), loc.getBlockZ())) return;
 
         e.setCancelled(true);
     }

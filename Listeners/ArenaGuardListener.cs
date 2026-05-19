@@ -52,8 +52,11 @@ public sealed class ArenaGuardListener : Listener
         var vMatch = _duels.getMatch(victim.getUniqueId());
         var aMatch = _duels.getMatch(attacker.getUniqueId());
 
-        // The only legal PvP is between two players in the same match.
-        if (vMatch != null && ReferenceEquals(vMatch, aMatch)) return;
+        // The only legal PvP is between non-eliminated opponents in the same match.
+        if (vMatch != null
+            && ReferenceEquals(vMatch, aMatch)
+            && vMatch.areOpponents(attacker.getUniqueId(), victim.getUniqueId()))
+            return;
 
         // Everything else (lobby PvP, cross-match attacks, matched-vs-unmatched) -> deny.
         e.setCancelled(true);

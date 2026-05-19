@@ -36,6 +36,8 @@ public sealed class QueueManager
     {
         if (_duels.isInMatch(player.getUniqueId()))
             return "§cYou're already in a duel.";
+        if (BanditDuels.Instance.Parties?.isInParty(player.getUniqueId()) == true)
+            return "§cLeave your party before joining the 1v1 queue.";
 
         var kit = _kits.get(kitId);
         if (kit == null)

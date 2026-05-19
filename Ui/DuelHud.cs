@@ -57,8 +57,11 @@ public sealed class DuelHud
                 var msg = "[Duel] " + Milestones[match.NextMilestoneIndex].text +
                           "  (vs " + "{opp}" + ")";
                 match.NextMilestoneIndex++;
-                FourKit.getPlayer(match.PlayerAName)?.sendMessage(msg.Replace("{opp}", match.PlayerBName));
-                FourKit.getPlayer(match.PlayerBName)?.sendMessage(msg.Replace("{opp}", match.PlayerAName));
+                foreach (var mp in match.Players)
+                {
+                    if (mp.Eliminated) continue;
+                    FourKit.getPlayer(mp.Name)?.sendMessage(msg.Replace("{opp}", match.opponentsLabelOf(mp.Id)));
+                }
             }
         }
     }

@@ -66,6 +66,9 @@ public sealed class DuelCommand : CommandExecutor
             case "q":
                 return handleQueue(player, args);
 
+            case "party":
+                return handleParty(player, args);
+
             case "leave":
                 return handleLeave(player);
 
@@ -156,7 +159,9 @@ public sealed class DuelCommand : CommandExecutor
     {
         p.sendMessage("§6Registered arenas (" + _arenas.count() + "):");
         foreach (var a in _arenas.all())
-            p.sendMessage("- " + a.Name + " at " + a.BoundsMin + " to " + a.BoundsMax);
+            p.sendMessage("- " + a.Name + " [" + a.MinTeamSize + "v" + a.MinTeamSize
+                + (a.MaxTeamSize != a.MinTeamSize ? "-" + a.MaxTeamSize + "v" + a.MaxTeamSize : "")
+                + "] at " + a.BoundsMin + " to " + a.BoundsMax);
     }
 
     private bool handleQueue(Player p, string[] args)
@@ -172,8 +177,84 @@ public sealed class DuelCommand : CommandExecutor
             p.sendMessage("§cQueue system is not available.");
             return true;
         }
+        if (BanditDuels.Instance.Parties?.isInParty(p.getUniqueId()) == true)
+        {
+            p.sendMessage("§cLeave your party before joining the 1v1 queue.");
+            return true;
+        }
         p.sendMessage(queues.joinQueue(p, args[1]));
         return true;
+    }
+
+    private bool handleParty(Player p, string[] args)
+    {
+        var parties = BanditDuels.Instance.Parties;
+        if (parties == null)
+        {
+            p.sendMessage("§cParty system is not available.");
+            return true;
+        }
+
+        if (args.Length < 2)
+        {
+            sendPartyHelp(p);
+            return true;
+        }
+
+        switch (args[1].ToLowerInvariant())
+        {
+            case "create":
+                if (args.Length < 4)
+                {
+                    p.sendMessage("§cUsage: /duel party create <kit> <2v2|3v3>");
+                    return true;
+                }
+                p.sendMessage(parties.create(p, args[2], args[3]));
+                return true;
+
+            case "invite":
+                if (args.Length < 3)
+                {
+                    p.sendMessage("§cUsage: /duel party invite <player>");
+                    return true;
+                }
+                p.sendMessage(parties.invite(p, args[2]));
+                return true;
+
+            case "accept":
+                p.sendMessage(parties.accept(p, args.Length >= 3 ? args[2] : null));
+                return true;
+
+            case "decline":
+            case "deny":
+                p.sendMessage(parties.decline(p, args.Length >= 3 ? args[2] : null));
+                return true;
+
+            case "disband":
+                p.sendMessage(parties.disband(p));
+                return true;
+
+            case "leave":
+                p.sendMessage(parties.leave(p));
+                return true;
+
+            case "remove":
+                if (args.Length < 3)
+                {
+                    p.sendMessage("§cUsage: /duel party remove <player>");
+                    return true;
+                }
+                p.sendMessage(parties.remove(p, args[2]));
+                return true;
+
+            case "info":
+                parties.sendInfo(p);
+                return true;
+
+            default:
+                sendPartyHelp(p);
+                return true;
+        }
     }
 
     private bool handleLeave(Player p)
@@ -618,12 +699,26 @@ public sealed class DuelCommand : CommandExecutor
         p.sendMessage("§7- §f/duel accept <player>");
         p.sendMessage("§7- §f/duel deny <player>");
         p.sendMessage("§7- §f/duel queue <kit> §7- wait for an opponent on this kit");
+        p.sendMessage("§7- §f/duel party create <kit> <2v2|3v3> §7- create a team party");
         p.sendMessage("§7- §f/duel leave §7- leave your current queue");
         p.sendMessage("§7- §f/duel queues §7- list active queues");
         p.sendMessage("§7- §f/duel stats [player] §7- show wins/losses (self or by name)");
         p.sendMessage("§7- §f/duel top [kit] §7- leaderboard, optional kit filter");
         p.sendMessage("§7- §f/duel kits §7- list available kits");
         p.sendMessage("§7- §f/duel arenas §7- list arenas");
+    }
+
+    private void sendPartyHelp(Player p)
+    {
+        p.sendMessage("§6[Party] §7Commands:");
+        p.sendMessage("§7- §f/duel party create <kit> <2v2|3v3>");
+        p.sendMessage("§7- §f/duel party invite <player>");
+        p.sendMessage("§7- §f/duel party accept [leader]");
+        p.sendMessage("§7- §f/duel party decline [leader]");
+        p.sendMessage("§7- §f/duel party remove <player>");
+        p.sendMessage("§7- §f/duel party leave");
+        p.sendMessage("§7- §f/duel party disband");
+        p.sendMessage("§7- §f/duel party info");
     }
 
     private void sendConsoleUsage(CommandSender sender)

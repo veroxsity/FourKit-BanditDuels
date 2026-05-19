@@ -8,6 +8,7 @@ using BanditDuels.Duels;
 using BanditDuels.Kits;
 using BanditDuels.Listeners;
 using BanditDuels.Lobby;
+using BanditDuels.Party;
 using BanditDuels.Permissions;
 using BanditDuels.Queue;
 using BanditDuels.Stats;
@@ -36,6 +37,7 @@ public class BanditDuels : ServerPlugin
     public LobbyManager Lobby { get; private set; } = null!;
     public MobCuller? MobCuller { get; private set; }
     public QueueManager? Queues { get; private set; }
+    public PartyManager? Parties { get; private set; }
     public PendingResetManager? PendingResets { get; private set; }
     public StatsRepo? Stats { get; private set; }
     public AdminManager? Admins { get; private set; }
@@ -87,6 +89,9 @@ public class BanditDuels : ServerPlugin
 
         Queues = new QueueManager(Manager, Kits);
         FourKit.addListener(new QueueListener(Queues));
+
+        Parties = new PartyManager(Manager, Kits, Arenas);
+        FourKit.addListener(new PartyListener(Parties));
 
         var executor = new DuelCommand(Manager, Kits, Arenas);
         FourKit.getCommand("duel").setExecutor(executor);

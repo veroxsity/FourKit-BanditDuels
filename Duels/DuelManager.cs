@@ -57,9 +57,16 @@ public sealed class DuelManager
 
         if (isInMatch(challenger.getUniqueId())) return "You are already in a duel.";
         if (isInMatch(target.getUniqueId()))     return "§cThat player is already in a duel.";
+        if (BanditDuels.Instance.Parties?.isInParty(challenger.getUniqueId()) == true)
+            return "§cLeave your party before starting a 1v1 duel.";
+        if (BanditDuels.Instance.Parties?.isInParty(target.getUniqueId()) == true)
+            return "§cThat player is in a party.";
 
         if (_kits.get(kitId) == null)
             return "§cUnknown kit '" + kitId + "'. Available: " + string.Join(", ", kitIds());
+
+        if (!_arenas.all().Any(a => a.supportsTeamSize(1)))
+            return "§cNo 1v1 arenas are configured.";
 
         var req = new DuelRequest(
             challenger.getUniqueId(), challenger.getName(),
@@ -68,7 +75,7 @@ public sealed class DuelManager
 
         _requests[req.key()] = req;
 
-        target.sendMessage("§6[Duel] §e" + challenger.getName() + " §7challenged you to a §b" + _kits.get(kitId)!.DisplayName + " §7duel.");
+        target.sendMessage("§6[Duel] §e" + challenger.getName() + " §7challenged you to a §b" + _kits.get(kitId)!.DisplayName + " §71v1 duel.");
         target.sendMessage("§7Type §f/duel accept " + challenger.getName() + " §7to accept, §f/duel deny " + challenger.getName() + " §7to decline.");
         return "§6[Duel] §7Challenge sent to §e" + target.getName() + " (" + _kits.get(kitId)!.DisplayName + "). Expires in " + (int)RequestTtl.TotalSeconds + "s.";
     }
@@ -84,14 +91,18 @@ public sealed class DuelManager
 
         if (isInMatch(challenger.getUniqueId())) return "" + challenger.getName() + " is already in a duel.";
         if (isInMatch(acceptor.getUniqueId()))   return "You are already in a duel.";
+        if (BanditDuels.Instance.Parties?.isInParty(challenger.getUniqueId()) == true)
+            return challenger.getName() + " is in a party.";
+        if (BanditDuels.Instance.Parties?.isInParty(acceptor.getUniqueId()) == true)
+            return "§cLeave your party before accepting a 1v1 duel.";
 
         var kit = _kits.get(req.KitId);
         if (kit == null) return "§cKit no longer available.";
 
-        var arena = _arenas.acquireFree();
-        if (arena == null) return "No arenas are free right now.";
+        var arena = _arenas.acquireFree(teamSize: 1);
+        if (arena == null) return "No 1v1 arenas are free right now.";
 
-        startMatch(challenger, acceptor, arena, kit);
+        startMatch(new[] { challenger }, new[] { acceptor }, arena, kit);
         return "§6[Duel] §7Match started in §b" + arena.Name + ".";
     }
 
@@ -111,75 +122,90 @@ public sealed class DuelManager
         foreach (var k in toRemove) _requests.Remove(k);
     }
 
-    // ---------- queue entry point ----------
+    // ---------- queue entry points ----------
 
-    /// <summary>
-    /// Try to start a match between two players who came from the queue system.
-    /// Returns false (with an error message) if the match couldn't start because of
-    /// a missing kit, no free arenas, or one side already being in a match.
-    /// </summary>
-    public bool tryStartMatchFromQueue(Player a, Player b, string kitId, out string error)
+    public bool tryStartMatchFromQueue(Player a, Player b, string kitId, out string error) =>
+        tryStartMatchFromQueue(new[] { a }, new[] { b }, kitId, out error);
+
+    public bool tryStartMatchFromQueue(IReadOnlyList<Player> teamA, IReadOnlyList<Player> teamB, string kitId, out string error)
     {
-        if (a.getUniqueId() == b.getUniqueId())
+        if (teamA.Count == 0 || teamA.Count != teamB.Count)
         {
-            error = "Cannot match a player with themselves.";
+            error = "Teams must be the same size.";
             return false;
         }
-        if (isInMatch(a.getUniqueId())) { error = a.getName() + " is already in a duel."; return false; }
-        if (isInMatch(b.getUniqueId())) { error = b.getName() + " is already in a duel."; return false; }
+
+        var all = teamA.Concat(teamB).ToList();
+        if (all.Select(p => p.getUniqueId()).Distinct().Count() != all.Count)
+        {
+            error = "A player cannot be on both teams.";
+            return false;
+        }
+
+        foreach (var p in all)
+        {
+            if (isInMatch(p.getUniqueId()))
+            {
+                error = p.getName() + " is already in a duel.";
+                return false;
+            }
+        }
 
         var kit = _kits.get(kitId);
         if (kit == null) { error = "Kit '" + kitId + "' no longer exists."; return false; }
 
-        var arena = _arenas.acquireFree();
-        if (arena == null) { error = "No arenas are free right now."; return false; }
+        int teamSize = teamA.Count;
+        var arena = _arenas.acquireFree(teamSize);
+        if (arena == null) { error = "No " + teamSize + "v" + teamSize + " arenas are free right now."; return false; }
 
-        startMatch(a, b, arena, kit);
+        startMatch(teamA, teamB, arena, kit);
         error = "";
         return true;
     }
 
     // ---------- match lifecycle ----------
 
-    private void startMatch(Player a, Player b, Arena arena, Kit kit)
+    private void startMatch(IReadOnlyList<Player> teamA, IReadOnlyList<Player> teamB, Arena arena, Kit kit)
     {
-        // If either player was waiting in a queue, drop them now so finishing
-        // this match doesn't accidentally pair them with the next joiner.
-        BanditDuels.Instance.Queues?.removeFromQueue(a.getUniqueId());
-        BanditDuels.Instance.Queues?.removeFromQueue(b.getUniqueId());
-
-        var snapA = PlayerSnapshot.capture(a);
-        var snapB = PlayerSnapshot.capture(b);
+        foreach (var p in teamA.Concat(teamB))
+            BanditDuels.Instance.Queues?.removeFromQueue(p.getUniqueId());
 
         var match = new Match(
-            a.getUniqueId(), a.getName(), snapA,
-            b.getUniqueId(), b.getName(), snapB,
-            arena, kit);
+            teamA.Select(p => new MatchPlayer(p.getUniqueId(), p.getName(), PlayerSnapshot.capture(p), isTeamA: true)).ToList(),
+            teamB.Select(p => new MatchPlayer(p.getUniqueId(), p.getName(), PlayerSnapshot.capture(p), isTeamA: false)).ToList(),
+            arena,
+            kit);
 
-        _matchByPlayer[a.getUniqueId()] = match;
-        _matchByPlayer[b.getUniqueId()] = match;
+        foreach (var mp in match.Players)
+            _matchByPlayer[mp.Id] = match;
 
-        prepareForFight(a);
-        prepareForFight(b);
+        for (int i = 0; i < teamA.Count; i++)
+            prepareAndSend(teamA[i], kit, arena.getTeamSpawn(teamA: true, i));
 
-        kit.apply(a);
-        kit.apply(b);
-
-        a.teleport(arena.getSpawnA());
-        b.teleport(arena.getSpawnB());
+        for (int i = 0; i < teamB.Count; i++)
+            prepareAndSend(teamB[i], kit, arena.getTeamSpawn(teamA: false, i));
 
         // Snapshot the arena's pristine state on first use. Teleport above
         // has loaded the relevant chunks, so getBlockAt returns real data.
-        // Subsequent matches in the same arena reuse the cached snapshot
-        // and skip the capture cost.
         BanditDuels.Instance.ArenaResetter?.snapshotIfNeeded(arena);
 
-        a.sendMessage("§6[Duel] §7Match starting against §e" + b.getName() + " §7on §b" + arena.Name + "§7.");
-        b.sendMessage("§6[Duel] §7Match starting against §e" + a.getName() + " §7on §b" + arena.Name + "§7.");
+        foreach (var mp in match.Players)
+            FourKit.getPlayer(mp.Name)?.sendMessage("§6[Duel] §7Match starting against §e"
+                + match.opponentsLabelOf(mp.Id) + " §7on §b" + arena.Name + "§7.");
 
-        FourKit.broadcastMessage("§6[Duel] §e" + a.getName() + " §7vs §e" + b.getName() + " §7on §b" + arena.Name + " §7(§f" + kit.DisplayName + "§7)");
+        var mode = match.TeamSize + "v" + match.TeamSize;
+        FourKit.broadcastMessage("§6[Duel] §e" + Match.teamLabel(match.TeamA) + " §7vs §e"
+            + Match.teamLabel(match.TeamB) + " §7on §b" + arena.Name + " §7(§f"
+            + kit.DisplayName + " " + mode + "§7)");
 
         scheduleCountdownTick(match);
+    }
+
+    private void prepareAndSend(Player p, Kit kit, Location spawn)
+    {
+        prepareForFight(p);
+        kit.apply(p);
+        p.teleport(spawn);
     }
 
     private void prepareForFight(Player p)
@@ -197,9 +223,6 @@ public sealed class DuelManager
 
     private void scheduleCountdownTick(Match match)
     {
-        // Single recurring task; cancel from inside when done. Avoids the
-        // FourKit scheduler bug where adding new tasks (runTaskLater) during
-        // its own iteration mutates the task dictionary and throws.
         FourKitTask? task = null;
         task = FourKit.getScheduler().runTaskTimer(_plugin, () => countdownStep(match, task!), 20, 20);
     }
@@ -208,54 +231,45 @@ public sealed class DuelManager
     {
         if (match.State != MatchState.Countdown) { task.cancel(); return; }
 
-        var a = FourKit.getPlayer(match.PlayerAName);
-        var b = FourKit.getPlayer(match.PlayerBName);
-        if (a == null || b == null)
+        var offline = match.Players.FirstOrDefault(mp => FourKit.getPlayer(mp.Name) == null);
+        if (offline != null)
         {
             task.cancel();
-            endMatchByForfeit(match, a, b);
+            cancelMatch(match, "§6[Duel] §7Match cancelled because §c" + offline.Name + " §7went offline.");
             return;
         }
 
         if (match.CountdownSecondsRemaining > 0)
         {
-            a.sendMessage("§e" + match.CountdownSecondsRemaining + "...");
-            b.sendMessage("§e" + match.CountdownSecondsRemaining + "...");
+            foreach (var mp in match.Players)
+                FourKit.getPlayer(mp.Name)?.sendMessage("§e" + match.CountdownSecondsRemaining + "...");
             match.CountdownSecondsRemaining--;
         }
         else
         {
-            a.sendMessage("§aFIGHT!");
-            b.sendMessage("§aFIGHT!");
+            foreach (var mp in match.Players)
+                FourKit.getPlayer(mp.Name)?.sendMessage("§aFIGHT!");
             match.State = MatchState.Active;
             match.ActiveAt = DateTime.UtcNow;
             task.cancel();
         }
     }
 
-    /// <summary>Called once per second by DuelHud while the match is active. Handles the time-cap draw
-    /// and the arena-escape forfeit check (ender pearls, parkour out, etc.).</summary>
+    /// <summary>Called once per second by DuelHud while the match is active.</summary>
     public void tickMatch(Match match)
     {
         if (match.State != MatchState.Active) return;
         if (match.ActiveAt is not { } active) return;
 
-        // Escape check before time cap: if a player pearled out in the last
-        // second of a 5min match they shouldn't get saved by the time-cap
-        // draw. Offline players are handled by the quit path; we only
-        // forfeit-on-escape players who are demonstrably still connected
-        // and just happen to be outside the AABB.
-        var a = FourKit.getPlayer(match.PlayerAName);
-        if (a != null && isOutsideArena(a, match.Arena))
+        foreach (var mp in match.Players)
         {
-            endMatchByEscape(match, match.PlayerA);
-            return;
-        }
-        var b = FourKit.getPlayer(match.PlayerBName);
-        if (b != null && isOutsideArena(b, match.Arena))
-        {
-            endMatchByEscape(match, match.PlayerB);
-            return;
+            if (mp.Eliminated) continue;
+            var p = FourKit.getPlayer(mp.Name);
+            if (p != null && isOutsideArena(p, match.Arena))
+            {
+                endMatchByEscape(match, mp.Id);
+                return;
+            }
         }
 
         var elapsed = (DateTime.UtcNow - active).TotalSeconds;
@@ -267,95 +281,133 @@ public sealed class DuelManager
     {
         var loc = p.getLocation();
         var world = loc.getWorld();
-        if (world == null) return false;  // unknown world; don't penalize
+        if (world == null) return false;
         return !arena.contains(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), world.getName());
     }
 
     public void endMatchByDeath(Match match, Guid loserId)
     {
         if (match.State == MatchState.Ending) return;
-        match.State = MatchState.Ending;
 
-        var loserName = match.nameOf(loserId);
-        var winnerId  = match.otherOf(loserId);
-        var winnerName = match.nameOf(winnerId);
+        var loser = match.player(loserId);
+        if (loser == null || loser.Eliminated) return;
+        match.eliminate(loserId);
 
-        FourKit.broadcastMessage("§6[Duel] §a" + winnerName + " §7defeated §c" + loserName + " §7on §b" + match.Arena.Name + "§7.");
+        var winningTeam = match.winnerTeam();
+        if (winningTeam.HasValue)
+        {
+            match.State = MatchState.Ending;
+            FourKit.broadcastMessage("§6[Duel] §a" + Match.teamLabel(match.team(winningTeam.Value))
+                + " §7defeated §c" + Match.teamLabel(match.opponents(winningTeam.Value))
+                + " §7on §b" + match.Arena.Name + "§7.");
+            recordResult(match, match.team(winningTeam.Value)[0].Id, MatchEndReason.Death);
+            finalizeMatch(match);
+            return;
+        }
 
-        recordResult(match, winnerId, MatchEndReason.Death);
-        finalizeMatch(match);
+        FourKit.broadcastMessage("§6[Duel] §c" + loser.Name + " §7was eliminated from §b" + match.Arena.Name + "§7.");
+        moveEliminatedOut(match, loser);
     }
 
     public void endMatchByForfeit(Match match, Player? maybeA, Player? maybeB)
     {
         if (match.State == MatchState.Ending) return;
-        match.State = MatchState.Ending;
-
-        string? winnerName = null;
-        string? loserName = null;
-        Guid? winnerId = null;
-        if (maybeA == null && maybeB != null) { winnerName = match.PlayerBName; loserName = match.PlayerAName; winnerId = match.PlayerB; }
-        else if (maybeB == null && maybeA != null) { winnerName = match.PlayerAName; loserName = match.PlayerBName; winnerId = match.PlayerA; }
-
-        if (winnerName != null && loserName != null)
-            FourKit.broadcastMessage("§6[Duel] §a" + winnerName + " §7wins by forfeit (§c" + loserName + " §7left).");
-        else
-            FourKit.broadcastMessage("§6[Duel] §7Match cancelled on §b" + match.Arena.Name + ".");
-
-        if (winnerId.HasValue)
-            recordResult(match, winnerId.Value, MatchEndReason.Forfeit);
-        // If both gone (winnerId null), skip stats; nobody to credit.
-
-        finalizeMatch(match);
+        if (maybeA == null && maybeB != null) { endMatchByQuit(match, match.PlayerA); return; }
+        if (maybeB == null && maybeA != null) { endMatchByQuit(match, match.PlayerB); return; }
+        cancelMatch(match, "§6[Duel] §7Match cancelled on §b" + match.Arena.Name + ".");
     }
 
     public void endMatchByQuit(Match match, Guid leaverId)
     {
         if (match.State == MatchState.Ending) return;
-        match.State = MatchState.Ending;
 
-        var winnerName = match.otherNameOf(leaverId);
-        var loserName = match.nameOf(leaverId);
-        FourKit.broadcastMessage("§6[Duel] §a" + winnerName + " §7wins by forfeit (§c" + loserName + " §7left).");
+        var leaver = match.player(leaverId);
+        if (leaver == null || leaver.Eliminated) return;
+        match.eliminate(leaverId);
 
-        recordResult(match, match.otherOf(leaverId), MatchEndReason.Quit);
-        finalizeMatch(match);
+        var winningTeam = match.winnerTeam();
+        if (winningTeam.HasValue)
+        {
+            match.State = MatchState.Ending;
+            FourKit.broadcastMessage("§6[Duel] §a" + Match.teamLabel(match.team(winningTeam.Value))
+                + " §7wins by forfeit against §c" + Match.teamLabel(match.opponents(winningTeam.Value)) + "§7.");
+            recordResult(match, match.team(winningTeam.Value)[0].Id, MatchEndReason.Quit);
+            finalizeMatch(match);
+            return;
+        }
+
+        FourKit.broadcastMessage("§6[Duel] §c" + leaver.Name + " §7left and was eliminated.");
     }
 
-    /// <summary>
-    /// Called when a still-connected duelist is detected outside their arena
-    /// AABB by the periodic <see cref="tickMatch"/> check. The escapee
-    /// forfeits and the other player wins. Distinct from
-    /// <see cref="endMatchByQuit"/>, which fires only on actual disconnect.
-    /// </summary>
     public void endMatchByEscape(Match match, Guid escaperId)
     {
         if (match.State == MatchState.Ending) return;
-        match.State = MatchState.Ending;
 
-        var winnerId   = match.otherOf(escaperId);
-        var winnerName = match.otherNameOf(escaperId);
-        var loserName  = match.nameOf(escaperId);
+        var escaper = match.player(escaperId);
+        if (escaper == null || escaper.Eliminated) return;
+        match.eliminate(escaperId);
 
-        FourKit.broadcastMessage("§6[Duel] §a" + winnerName + " §7wins - §c" + loserName + " §7left the arena.");
-        FourKit.getPlayer(loserName)?.sendMessage("§cYou forfeited by leaving the arena.");
+        var winningTeam = match.winnerTeam();
+        if (winningTeam.HasValue)
+        {
+            match.State = MatchState.Ending;
+            FourKit.broadcastMessage("§6[Duel] §a" + Match.teamLabel(match.team(winningTeam.Value))
+                + " §7wins - §c" + Match.teamLabel(match.opponents(winningTeam.Value)) + " §7left the arena.");
+            recordResult(match, match.team(winningTeam.Value)[0].Id, MatchEndReason.Escape);
+            finalizeMatch(match);
+            return;
+        }
 
-        recordResult(match, winnerId, MatchEndReason.Escape);
-        finalizeMatch(match);
+        FourKit.broadcastMessage("§6[Duel] §c" + escaper.Name + " §7left the arena and was eliminated.");
+        FourKit.getPlayer(escaper.Name)?.sendMessage("§cYou were eliminated by leaving the arena.");
+        moveEliminatedOut(match, escaper);
     }
 
     public void endMatchDraw(Match match)
     {
         if (match.State == MatchState.Ending) return;
         match.State = MatchState.Ending;
-        FourKit.broadcastMessage("§6[Duel] §7Match between §e" + match.PlayerAName + " §7and §e" + match.PlayerBName + " §7ended in a draw (time limit).");
+        FourKit.broadcastMessage("§6[Duel] §7Match between §e" + Match.teamLabel(match.TeamA)
+            + " §7and §e" + Match.teamLabel(match.TeamB) + " §7ended in a draw (time limit).");
         recordResult(match, Guid.Empty, MatchEndReason.Draw);
         finalizeMatch(match);
     }
 
-    /// <summary>Persist a row in stats.json. Skipped silently if the stats repo isn't enabled.</summary>
+    private void moveEliminatedOut(Match match, MatchPlayer eliminated)
+    {
+        FourKit.getScheduler().runTaskLater(_plugin, () =>
+        {
+            if (match.State == MatchState.Ending) return;
+            if (!eliminated.Eliminated) return;
+
+            var p = FourKit.getPlayer(eliminated.Name);
+            if (p == null) return;
+
+            p.getInventory().clear();
+            p.setGameMode(GameMode.ADVENTURE);
+            p.setHealth(20.0);
+            p.setFoodLevel(20);
+            p.setSaturation(20f);
+            p.setExhaustion(0f);
+
+            var spawn = BanditDuels.Instance.Lobby.getSafeSpawn();
+            if (spawn != null) p.teleport(spawn);
+        }, 20);
+    }
+
+    private void cancelMatch(Match match, string message)
+    {
+        if (match.State == MatchState.Ending) return;
+        match.State = MatchState.Ending;
+        FourKit.broadcastMessage(message);
+        finalizeMatch(match);
+    }
+
+    /// <summary>Persist a row in stats. Team matches are skipped until the DB schema supports rosters.</summary>
     private void recordResult(Match match, Guid winnerId, string endReason)
     {
+        if (match.IsTeamMatch) return;
+
         var stats = BanditDuels.Instance.Stats;
         if (stats == null) return;
 
@@ -381,24 +433,23 @@ public sealed class DuelManager
 
     private void finalizeMatch(Match match)
     {
-        _matchByPlayer.Remove(match.PlayerA);
-        _matchByPlayer.Remove(match.PlayerB);
+        foreach (var mp in match.Players)
+            _matchByPlayer.Remove(mp.Id);
 
-        var a = FourKit.getPlayer(match.PlayerAName);
-        var b = FourKit.getPlayer(match.PlayerBName);
+        foreach (var mp in match.Players)
+        {
+            var p = FourKit.getPlayer(mp.Name);
+            if (p != null)
+            {
+                p.getInventory().clear();
+                mp.Snapshot.restore(p);
+            }
+            else
+            {
+                BanditDuels.Instance.PendingResets?.markPending(mp.Id);
+            }
+        }
 
-        // Clear inventories first so the kit items aren't left behind when restoring.
-        // The death drop list is cleared in DuelDeathListener; this covers the survivor.
-        if (a != null) { a.getInventory().clear(); match.SnapshotA.restore(a); }
-        else { BanditDuels.Instance.PendingResets?.markPending(match.PlayerA); }
-
-        if (b != null) { b.getInventory().clear(); match.SnapshotB.restore(b); }
-        else { BanditDuels.Instance.PendingResets?.markPending(match.PlayerB); }
-
-        // Restore any blocks the fight modified (water buckets, broken blocks, etc.)
-        // back to the arena's pristine snapshot. Keep the arena marked busy
-        // until the batched restore completes so the next match doesn't try
-        // to use a half-reset arena.
         var arena = match.Arena;
         var resetter = BanditDuels.Instance.ArenaResetter;
         if (resetter != null && resetter.hasSnapshot(arena.Name))
@@ -409,7 +460,6 @@ public sealed class DuelManager
 
     public void shutdown()
     {
-        // best-effort restore on plugin disable
         foreach (var match in activeMatches().ToList())
         {
             match.State = MatchState.Ending;

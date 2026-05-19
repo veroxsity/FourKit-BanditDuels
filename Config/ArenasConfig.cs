@@ -11,8 +11,13 @@ public sealed class ArenaTemplate
     /// <summary>Arenas are named "{NamePrefix}_{n}" where n is 1..GridColumns.</summary>
     public string NamePrefix { get; set; } = "arena";
 
+    /// <summary>Inclusive team-size range this arena supports. Defaults keep old arenas 1v1-only.</summary>
+    public int MinTeamSize { get; set; } = 1;
+    public int MaxTeamSize { get; set; } = 1;
+
     public SpawnPoint SpawnA { get; set; } = new();
     public SpawnPoint SpawnB { get; set; } = new();
+    public TeamSpawns Spawns { get; set; } = new();
 
     public IntPoint BoundsMin { get; set; } = new();
     public IntPoint BoundsMax { get; set; } = new();
@@ -24,6 +29,12 @@ public sealed class ArenaTemplate
     public int GridStrideX { get; set; } = 0;
     public int GridStrideY { get; set; } = 0;
     public int GridStrideZ { get; set; } = 0;
+}
+
+public sealed class TeamSpawns
+{
+    public Dictionary<string, SpawnPoint> TeamA { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, SpawnPoint> TeamB { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 public sealed class SpawnPoint

@@ -29,17 +29,45 @@ public sealed class ArenaRegistry
         }
     }
 
-    private static Arena makeFromTemplate(ArenaTemplate t, int n, string worldName, int dx, int dy, int dz) => new Arena(
-        name: t.NamePrefix + "_" + n,
-        worldName: worldName,
-        spawnA: (
-            x: t.SpawnA.X + dx, y: t.SpawnA.Y + dy, z: t.SpawnA.Z + dz,
-            yaw: t.SpawnA.Yaw, pitch: t.SpawnA.Pitch),
-        spawnB: (
-            x: t.SpawnB.X + dx, y: t.SpawnB.Y + dy, z: t.SpawnB.Z + dz,
-            yaw: t.SpawnB.Yaw, pitch: t.SpawnB.Pitch),
-        boundsMin: (t.BoundsMin.X + dx, t.BoundsMin.Y + dy, t.BoundsMin.Z + dz),
-        boundsMax: (t.BoundsMax.X + dx, t.BoundsMax.Y + dy, t.BoundsMax.Z + dz));
+    private static Arena makeFromTemplate(ArenaTemplate t, int n, string worldName, int dx, int dy, int dz)
+    {
+        var spawnA = offset(t.SpawnA, dx, dy, dz);
+        var spawnB = offset(t.SpawnB, dx, dy, dz);
+        var teamA = orderedSpawns(t.Spawns.TeamA, dx, dy, dz);
+        var teamB = orderedSpawns(t.Spawns.TeamB, dx, dy, dz);
+        if (teamA.Count == 0) teamA.Add(spawnA);
+        if (teamB.Count == 0) teamB.Add(spawnB);
+
+        return new Arena(
+            name: t.NamePrefix + "_" + n,
+            worldName: worldName,
+            spawnA: spawnA,
+            spawnB: spawnB,
+            teamASpawns: teamA,
+            teamBSpawns: teamB,
+            boundsMin: (t.BoundsMin.X + dx, t.BoundsMin.Y + dy, t.BoundsMin.Z + dz),
+            boundsMax: (t.BoundsMax.X + dx, t.BoundsMax.Y + dy, t.BoundsMax.Z + dz),
+            minTeamSize: t.MinTeamSize,
+            maxTeamSize: t.MaxTeamSize);
+    }
+
+    private static (double x, double y, double z, float yaw, float pitch) offset(
+        SpawnPoint p, int dx, int dy, int dz) =>
+        (p.X + dx, p.Y + dy, p.Z + dz, p.Yaw, p.Pitch);
+
+    private static List<(double x, double y, double z, float yaw, float pitch)> orderedSpawns(
+        Dictionary<string, SpawnPoint> source, int dx, int dy, int dz) =>
+        source
+            .OrderBy(kv => spawnOrder(kv.Key))
+            .ThenBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(kv => offset(kv.Value, dx, dy, dz))
+            .ToList();
+
+    private static int spawnOrder(string key)
+    {
+        var digits = new string(key.Where(char.IsDigit).ToArray());
+        return int.TryParse(digits, out var n) ? n : int.MaxValue;
+    }
 
     /// <summary>
     /// Reserve any currently-free arena and return it, or null if all are
@@ -54,7 +82,9 @@ public sealed class ArenaRegistry
     /// only be called from the main FourKit thread anyway (event handlers
     /// and the scheduler) - the threading note is just future-proofing.
     /// </summary>
-    public Arena? acquireFree()
+    public Arena? acquireFree() => acquireFree(teamSize: 1);
+
+    public Arena? acquireFree(int teamSize)
     {
         // Collect the indices of every currently-free arena. Allocating a
         // small list here is fine: it lives for one stack frame and the
@@ -62,7 +92,8 @@ public sealed class ArenaRegistry
         var freeIndices = new List<int>(_arenas.Count);
         for (int i = 0; i < _arenas.Count; i++)
         {
-            if (!_busy.Contains(_arenas[i].Name)) freeIndices.Add(i);
+            if (!_busy.Contains(_arenas[i].Name) && _arenas[i].supportsTeamSize(teamSize))
+                freeIndices.Add(i);
         }
         if (freeIndices.Count == 0) return null;
 
