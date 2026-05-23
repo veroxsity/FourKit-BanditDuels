@@ -50,7 +50,6 @@ public sealed class DuelChatListener : Listener
 
         // Cache admin override state once per dispatch.
         var bd = BanditDuels.Instance;
-        var admins = bd?.Admins;
         bool adminOverride = bd?.Config?.Features?.AdminsSeeAllChat ?? false;
 
         // Build the removal list - can't mutate the set while iterating it.
@@ -62,8 +61,9 @@ public sealed class DuelChatListener : Listener
             // Sender always sees their own echo.
             if (recipient.getUniqueId() == sender.getUniqueId()) continue;
 
-            // Admin override: admins see everything regardless of scoping.
-            if (adminOverride && admins != null && admins.isAdmin(recipient.getName())) continue;
+            // Admin/chat-bypass: holders of banditduels.bypass.chat see
+            // everything regardless of duel scoping.
+            if (adminOverride && LCEPermsBridge.has(recipient, "banditduels.bypass.chat")) continue;
 
             var recipientMatch = _duels.getMatch(recipient.getUniqueId());
 

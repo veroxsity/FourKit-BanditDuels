@@ -42,6 +42,14 @@ public sealed class LobbyGuardListener : Listener
     /// this flag; those are comfort features, not protection.</summary>
     public bool BlockProtectionEnabled { get; set; } = true;
 
+    /// <summary>If false, the periodic tick stops yanking non-duelling
+    /// non-admin players back to lobby spawn when they walk outside the
+    /// lobby AABB. Set false when WorldGuard's exit=deny (or any other
+    /// plugin) is handling that. Comfort features (health, food,
+    /// saturation top-up, fall damage cancel) keep running. Default
+    /// true.</summary>
+    public bool BoundaryEnforcementEnabled { get; set; } = true;
+
     /// <summary>
     /// Buffer applied around the lobby AABB when deciding whether to cancel
     /// block break / place / interact. Player reach is ~4.5 blocks in
@@ -87,8 +95,6 @@ public sealed class LobbyGuardListener : Listener
     {
         if (!_lobby.HasBounds || !_lobby.HasSpawn) return;
 
-        var admins = BanditDuels.Instance.Admins;
-
         foreach (var p in FourKit.getOnlinePlayers())
         {
             if (_duels.isInMatch(p.getUniqueId())) continue;
@@ -101,9 +107,15 @@ public sealed class LobbyGuardListener : Listener
 
             if (!inLobby)
             {
+                // Boundary enforcement off (WorldGuard handles it via
+                // exit=deny, or it's been disabled for some other reason):
+                // skip the teleport-back but still process comfort features
+                // for in-lobby players elsewhere in the loop.
+                if (!BoundaryEnforcementEnabled) continue;
+
                 // Admins can roam freely outside the lobby (to set bounds, fix
                 // arenas, etc.) without being yanked back every 0.5s.
-                if (admins != null && admins.isAdmin(p.getName())) continue;
+                if (isAdmin(p)) continue;
 
                 var spawn = _lobby.getSafeSpawn();
                 if (spawn != null) p.teleport(spawn);
@@ -214,16 +226,15 @@ public sealed class LobbyGuardListener : Listener
     }
 
     /// <summary>
-    /// True if the player is in the BanditDuels admin list. Centralized so
-    /// all four lobby-protection handlers share the same check. Null-safe
-    /// against the manager not being initialized yet during plugin enable.
+    /// True if the player has the banditduels.bypass.lobby permission.
+    /// Centralized so all four lobby-protection handlers share the same
+    /// check. Routes through LCEPermsBridge so the lookup is consistent
+    /// with the rest of the plugin.
     /// </summary>
     private static bool isAdmin(Player? p)
     {
         if (p == null) return false;
-        var admins = BanditDuels.Instance.Admins;
-        if (admins == null) return false;
-        return admins.isAdmin(p.getName());
+        return LCEPermsBridge.has(p, "banditduels.bypass.lobby");
     }
 
     /// <summary>

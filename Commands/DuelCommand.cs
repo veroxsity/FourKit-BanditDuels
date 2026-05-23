@@ -48,41 +48,55 @@ public sealed class DuelCommand : CommandExecutor
         switch (sub)
         {
             case "accept":
+                if (!LCEPermsBridge.requirePerm(player, "banditduels.accept")) return true;
                 return handleAccept(player, args);
 
             case "deny":
             case "decline":
+                // Denying is harmless - leave open so a player can always
+                // refuse a challenge regardless of perms.
                 return handleDeny(player, args);
 
             case "kits":
+                if (!LCEPermsBridge.requirePerm(player, "banditduels.kits.list")) return true;
                 listKits(player);
                 return true;
 
             case "arenas":
+                if (!LCEPermsBridge.requirePerm(player, "banditduels.arenas.list")) return true;
                 listArenas(player);
                 return true;
 
             case "queue":
             case "q":
+                if (!LCEPermsBridge.requirePerm(player, "banditduels.queue.join")) return true;
                 return handleQueue(player, args);
 
             case "party":
+                // Per-subcommand party perms are checked inside handleParty
+                // so each party action can be gated independently.
                 return handleParty(player, args);
 
             case "leave":
+                if (!LCEPermsBridge.requirePerm(player, "banditduels.leave")) return true;
                 return handleLeave(player);
 
             case "queues":
+                if (!LCEPermsBridge.requirePerm(player, "banditduels.queue.list")) return true;
                 listQueues(player);
                 return true;
 
             case "stats":
+                // Self vs others split inside handleStats: stats.self for /duel
+                // stats (no args), stats.others for /duel stats <name>.
                 return handleStats(player, args);
 
             case "top":
+                if (!LCEPermsBridge.requirePerm(player, "banditduels.top")) return true;
                 return handleTop(player, args);
 
             default:
+                if (!LCEPermsBridge.requirePerm(player, "banditduels.challenge")) return true;
                 return handleChallenge(player, args);
         }
     }
@@ -109,6 +123,12 @@ public sealed class DuelCommand : CommandExecutor
             p.sendMessage("Player '" + targetName + "' is not online.");
             return true;
         }
+
+        // Per-kit gate: check banditduels.kit.<id> before forwarding to
+        // the request manager. Done after the target check so a player
+        // gets the more useful 'not online' error first if both apply.
+        var kitNode = "banditduels.kit." + kitId.ToLowerInvariant();
+        if (!LCEPermsBridge.requirePerm(p, kitNode)) return true;
 
         p.sendMessage(_duels.createRequest(p, target, kitId));
         return true;
@@ -151,8 +171,17 @@ public sealed class DuelCommand : CommandExecutor
     private void listKits(Player p)
     {
         p.sendMessage("§6Available kits:");
+        int shown = 0;
         foreach (var k in _kits.all())
+        {
+            // Per-kit gating: only show kits the player can actually use.
+            // Avoids the "challenged with op kit, got 'no permission'" UX trap.
+            if (!LCEPermsBridge.has(p, "banditduels.kit." + k.Id.ToLowerInvariant())) continue;
             p.sendMessage("- " + k.Id + " (" + k.DisplayName + ")");
+            shown++;
+        }
+        if (shown == 0)
+            p.sendMessage("§7(no kits available to you)");
     }
 
     private void listArenas(Player p)
@@ -182,6 +211,13 @@ public sealed class DuelCommand : CommandExecutor
             p.sendMessage("§cLeave your party before joining the 1v1 queue.");
             return true;
         }
+
+        // Per-kit gate. Matches handleChallenge so /duel queue <kit> can't
+        // bypass kit perms by going through the queue instead of a direct
+        // challenge.
+        var kitNode = "banditduels.kit." + args[1].ToLowerInvariant();
+        if (!LCEPermsBridge.requirePerm(p, kitNode)) return true;
+
         p.sendMessage(queues.joinQueue(p, args[1]));
         return true;
     }
@@ -204,6 +240,7 @@ public sealed class DuelCommand : CommandExecutor
         switch (args[1].ToLowerInvariant())
         {
             case "create":
+                if (!LCEPermsBridge.requirePerm(p, "banditduels.party.create")) return true;
                 if (args.Length < 4)
                 {
                     p.sendMessage("§cUsage: /duel party create <kit> <2v2|3v3>");
@@ -213,6 +250,7 @@ public sealed class DuelCommand : CommandExecutor
                 return true;
 
             case "invite":
+                if (!LCEPermsBridge.requirePerm(p, "banditduels.party.invite")) return true;
                 if (args.Length < 3)
                 {
                     p.sendMessage("§cUsage: /duel party invite <player>");
@@ -222,23 +260,28 @@ public sealed class DuelCommand : CommandExecutor
                 return true;
 
             case "accept":
+                if (!LCEPermsBridge.requirePerm(p, "banditduels.party.accept")) return true;
                 p.sendMessage(parties.accept(p, args.Length >= 3 ? args[2] : null));
                 return true;
 
             case "decline":
             case "deny":
+                // Declining a party invite is harmless. Leave open.
                 p.sendMessage(parties.decline(p, args.Length >= 3 ? args[2] : null));
                 return true;
 
             case "disband":
+                if (!LCEPermsBridge.requirePerm(p, "banditduels.party.disband")) return true;
                 p.sendMessage(parties.disband(p));
                 return true;
 
             case "leave":
+                if (!LCEPermsBridge.requirePerm(p, "banditduels.party.leave")) return true;
                 p.sendMessage(parties.leave(p));
                 return true;
 
             case "remove":
+                if (!LCEPermsBridge.requirePerm(p, "banditduels.party.remove")) return true;
                 if (args.Length < 3)
                 {
                     p.sendMessage("§cUsage: /duel party remove <player>");
@@ -248,6 +291,7 @@ public sealed class DuelCommand : CommandExecutor
                 return true;
 
             case "info":
+                if (!LCEPermsBridge.requirePerm(p, "banditduels.party.info")) return true;
                 parties.sendInfo(p);
                 return true;
 
@@ -295,6 +339,18 @@ public sealed class DuelCommand : CommandExecutor
         {
             p.sendMessage("§cStats not available.");
             return true;
+        }
+
+        // Gate self vs others separately so a server can let players
+        // look up their own stats while restricting lookups of others.
+        bool isOtherLookup = args.Length >= 2;
+        if (isOtherLookup)
+        {
+            if (!LCEPermsBridge.requirePerm(p, "banditduels.stats.others")) return true;
+        }
+        else
+        {
+            if (!LCEPermsBridge.requirePerm(p, "banditduels.stats.self")) return true;
         }
 
         string targetUuid;
@@ -393,47 +449,44 @@ public sealed class DuelCommand : CommandExecutor
 
         var sub = args[1].ToLowerInvariant();
 
-        // Console-only: managing the admin list itself. These never run from
-        // in-game so an admin's account being compromised can't escalate.
+        // /duel admin add|remove|list are deprecated. The legacy admins.json
+        // list is no longer consulted - permissions flow through LCEPerms.
         if (sub == "add" || sub == "remove" || sub == "list")
         {
-            if (sender is Player)
-            {
-                sender.sendMessage("/duel admin " + sub + " can only be run from the server console.");
-                return true;
-            }
-            return sub switch
-            {
-                "add"    => handleAdminAdd(sender, args),
-                "remove" => handleAdminRemove(sender, args),
-                "list"   => handleAdminList(sender),
-                _        => true,
-            };
-        }
-
-        // Everything below is in-game admin tooling. Needs a player, and
-        // that player must be on the admin list.
-        if (sender is not Player player)
-        {
-            sender.sendMessage("/duel admin " + sub + " must be run in-game by a duel admin.");
+            sender.sendMessage("[BanditDuels] /duel admin " + sub + " is deprecated. Use /lp instead:");
+            sender.sendMessage("[BanditDuels]   lp group admin permission set banditduels.admin.* true");
+            sender.sendMessage("[BanditDuels]   lp group admin permission set banditduels.bypass.lobby true");
+            sender.sendMessage("[BanditDuels]   lp group admin permission set banditduels.bypass.chat true");
+            sender.sendMessage("[BanditDuels]   lp user <name> parent add admin");
             return true;
         }
 
-        var admins = BanditDuels.Instance.Admins;
-        if (admins == null || !admins.isAdmin(player.getName()))
+        if (sender is not Player player)
         {
-            player.sendMessage("§cYou aren't a duel admin. Ask the server operator to run §f/duel admin add " + player.getName() + " §cin the server console.");
+            sender.sendMessage("/duel admin " + sub + " must be run in-game.");
             return true;
         }
 
         switch (sub)
         {
-            case "setup":      return handleSetupGrid(player);
-            case "guard":      return handleGuardToggle(player, args);
-            case "lobbyguard": return handleLobbyGuardToggle(player, args);
-            case "setspawn":   return handleSetSpawn(player);
-            case "setbounds":  return handleSetBounds(player, args);
-            case "lobbyinfo":  return handleLobbyInfo(player);
+            case "setup":
+                if (!LCEPermsBridge.requirePerm(player, "banditduels.admin.setup")) return true;
+                return handleSetupGrid(player);
+            case "guard":
+                if (!LCEPermsBridge.requirePerm(player, "banditduels.admin.guard")) return true;
+                return handleGuardToggle(player, args);
+            case "lobbyguard":
+                if (!LCEPermsBridge.requirePerm(player, "banditduels.admin.lobbyguard")) return true;
+                return handleLobbyGuardToggle(player, args);
+            case "setspawn":
+                if (!LCEPermsBridge.requirePerm(player, "banditduels.admin.setspawn")) return true;
+                return handleSetSpawn(player);
+            case "setbounds":
+                if (!LCEPermsBridge.requirePerm(player, "banditduels.admin.setbounds")) return true;
+                return handleSetBounds(player, args);
+            case "lobbyinfo":
+                if (!LCEPermsBridge.requirePerm(player, "banditduels.admin.lobbyinfo")) return true;
+                return handleLobbyInfo(player);
             default:
                 player.sendMessage("§cUnknown admin subcommand. Try §f/duel admin §cwith no arguments for the list.");
                 return true;
@@ -459,58 +512,6 @@ public sealed class DuelCommand : CommandExecutor
         sender.sendMessage("  /duel admin remove <name> - revoke a player's admin role");
         sender.sendMessage("  /duel admin list          - show the current admin list");
         sender.sendMessage("Players with the admin role can use setup / guard / setspawn / setbounds / lobbyinfo in-game.");
-    }
-
-    private bool handleAdminAdd(CommandSender sender, string[] args)
-    {
-        if (args.Length < 3)
-        {
-            sender.sendMessage("Usage: /duel admin add <name>");
-            return true;
-        }
-        var admins = BanditDuels.Instance.Admins;
-        if (admins == null) { sender.sendMessage("Admin system unavailable."); return true; }
-
-        var name = args[2];
-        if (admins.add(name))
-            sender.sendMessage("Added '" + name + "' as a duel admin. Total admins: " + admins.all().Count + ".");
-        else
-            sender.sendMessage("'" + name + "' is already a duel admin.");
-        return true;
-    }
-
-    private bool handleAdminRemove(CommandSender sender, string[] args)
-    {
-        if (args.Length < 3)
-        {
-            sender.sendMessage("Usage: /duel admin remove <name>");
-            return true;
-        }
-        var admins = BanditDuels.Instance.Admins;
-        if (admins == null) { sender.sendMessage("Admin system unavailable."); return true; }
-
-        var name = args[2];
-        if (admins.remove(name))
-            sender.sendMessage("Removed '" + name + "' from duel admins. Total admins: " + admins.all().Count + ".");
-        else
-            sender.sendMessage("'" + name + "' was not in the admin list.");
-        return true;
-    }
-
-    private bool handleAdminList(CommandSender sender)
-    {
-        var admins = BanditDuels.Instance.Admins;
-        if (admins == null) { sender.sendMessage("Admin system unavailable."); return true; }
-
-        var all = admins.all();
-        if (all.Count == 0)
-        {
-            sender.sendMessage("No duel admins configured. Use /duel admin add <name> to grant the role.");
-            return true;
-        }
-        sender.sendMessage("Duel admins (" + all.Count + "):");
-        foreach (var n in all) sender.sendMessage("  - " + n);
-        return true;
     }
 
     private bool handleSetSpawn(Player p)
@@ -615,11 +616,15 @@ public sealed class DuelCommand : CommandExecutor
         {
             case "on":  case "true":  case "1":
                 guard.BlockProtectionEnabled = true;
-                p.sendMessage("§aLobby block protection ON§a.");
+                BanditDuels.Instance.Lobby.Config.BlockProtectionEnabled = true;
+                BanditDuels.Instance.Lobby.save();
+                p.sendMessage("§aLobby block protection ON§a. (persisted)");
                 return true;
             case "off": case "false": case "0":
                 guard.BlockProtectionEnabled = false;
-                p.sendMessage("§eLobby block protection OFF§e. You can break/place/interact in the lobby now (don't forget to turn it back on).");
+                BanditDuels.Instance.Lobby.Config.BlockProtectionEnabled = false;
+                BanditDuels.Instance.Lobby.save();
+                p.sendMessage("§eLobby block protection OFF§e. (persisted) Delegating to another plugin? Make sure something else protects the lobby.");
                 return true;
             default:
                 p.sendMessage("§cExpected §fon §cor §foff§c.");

@@ -71,6 +71,23 @@ public class BanditDuels : ServerPlugin
         Admins = new AdminManager();
         Admins.load();
 
+        // Migration notice: admins.json is no longer used for permission
+        // checks. Surface the legacy names so the operator can transcribe
+        // them into LCEPerms via /lp.
+        if (Admins.all().Count > 0)
+        {
+            Console.WriteLine("[BanditDuels] NOTICE: admins.json is no longer used for permission checks.");
+            Console.WriteLine("[BanditDuels]   Permissions now flow through LCEPerms. Legacy admins.json contains:");
+            Console.WriteLine("[BanditDuels]     " + string.Join(", ", Admins.all()));
+            Console.WriteLine("[BanditDuels]   To reproduce the old behavior, install LCEPerms and from console run:");
+            Console.WriteLine("[BanditDuels]     lp group admin permission set banditduels.admin.* true");
+            Console.WriteLine("[BanditDuels]     lp group admin permission set banditduels.bypass.lobby true");
+            Console.WriteLine("[BanditDuels]     lp group admin permission set banditduels.bypass.chat true");
+            foreach (var n in Admins.all())
+                Console.WriteLine("[BanditDuels]     lp user " + n + " parent add admin");
+            Console.WriteLine("[BanditDuels]   Then delete plugins/BanditDuels-data/admins.json.");
+        }
+
         ArenaResetter = new ArenaResetManager();
         ArenaResetter.loadAllFromDisk(Arenas);
         ArenaResetter.start(this);
@@ -84,6 +101,11 @@ public class BanditDuels : ServerPlugin
         Lobby = new LobbyManager();
         Lobby.load();
         LobbyGuard = new LobbyGuardListener(Lobby, Manager);
+        // Apply the persisted lobbyguard toggles. Defaults true on fresh
+        // installs; servers delegating lobby protection to WorldGuard (or
+        // any other plugin) flip these to false in lobby.json.
+        LobbyGuard.BlockProtectionEnabled      = Lobby.Config.BlockProtectionEnabled;
+        LobbyGuard.BoundaryEnforcementEnabled  = Lobby.Config.BoundaryEnforcementEnabled;
         FourKit.addListener(LobbyGuard);
         LobbyGuard.start(this);
 
@@ -116,7 +138,8 @@ public class BanditDuels : ServerPlugin
         Console.WriteLine("[BanditDuels] enabled. World: " + Config.WorldName
             + ", Arenas: " + Arenas.count() + ", Kits: " + Kits.count()
             + ", TimeLock: " + Config.Features.LockWorldTime
-            + ", MobCull: " + Config.Features.MobCullEnabled);
+            + ", MobCull: " + Config.Features.MobCullEnabled
+            + ". Permissions via LCEPerms (or open if absent - see README).");
     }
 
     public override void onDisable()
