@@ -31,4 +31,15 @@ public sealed class FeatureConfig
     /// chat scoping as regular players.
     /// </summary>
     public bool AdminsSeeAllChat { get; set; } = true;
+
+    /// <summary>
+    /// If true, the duel chat listener mirrors every chat message to the
+    /// server console in <c>[Chat] &lt;name&gt; message</c> form. Disabled by
+    /// default because BanditChat (the prefix/suffix plugin) typically owns
+    /// console logging in BanditVault setups, and having both produces a
+    /// duplicate per chat line. Enable this if you don't run BanditChat
+    /// (or any other chat plugin that logs to console) and want chat in
+    /// the server log.
+    /// </summary>
+    public bool ChatConsoleLog { get; set; } = false;
 }

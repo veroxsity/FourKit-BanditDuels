@@ -1,6 +1,6 @@
 # FourKit-BanditDuels
 
-> **WARNING**: This plugin's admin subcommands are open to everyone unless [LCEPerms](https://github.com/veroxsity/LCEPerms) is also installed. Without LCEPerms, any player can `/duel admin setup`, `/duel admin guard off`, etc. Install LCEPerms to gate access by group.
+> **WARNING**: This plugin's admin subcommands are open to everyone unless [LCEPerms](https://github.com/veroxsity/FourKit-LCEPerms) is also installed. Without LCEPerms, any player can `/duel admin setup`, `/duel admin guard off`, etc. Install LCEPerms to gate access by group.
 >
 > Permission nodes:
 >
@@ -121,10 +121,13 @@ The plugin bundles SQLite via embedded resources. No external dependencies to in
     "MobCullEnabled": true,
     "MobCullPeriodTicks": 100,
     "MobCullVoidY": -100.0,
-    "AdminsSeeAllChat": true
+    "AdminsSeeAllChat": true,
+    "ChatConsoleLog": false
   }
 }
 ```
+
+**`ChatConsoleLog`** (default `false`) - if true, every chat message is echoed to the server console in `[Chat] <name> message` form. Off by default because [FourKit-BanditChat](https://github.com/veroxsity/FourKit-BanditChat) is the recommended chat plugin and owns console logging itself - enabling both produces duplicate lines per chat message. Enable this only if you don't run BanditChat or another chat plugin that logs to console.
 
 Other data files in `plugins/BanditDuels-data/`:
 

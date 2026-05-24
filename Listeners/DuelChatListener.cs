@@ -38,19 +38,22 @@ public sealed class DuelChatListener : Listener
 
         var message = e.getMessage() ?? "";
 
-        // Server console always logs so staff can monitor including private
-        // duel messages.
-        Console.WriteLine("[Chat] <" + sender.getName() + "> " + message);
-
         // Sender's match (null if they're not in one). Match reference equality
         // works because DuelManager keeps one Match instance per active duel.
         var senderMatch = _duels.getMatch(sender.getUniqueId());
         if (senderMatch != null)
             e.setExternalBroadcastAllowed(false);
 
-        // Cache admin override state once per dispatch.
+        // Cache feature config once per dispatch.
         var bd = BanditDuels.Instance;
-        bool adminOverride = bd?.Config?.Features?.AdminsSeeAllChat ?? false;
+        bool adminOverride  = bd?.Config?.Features?.AdminsSeeAllChat ?? false;
+        bool consoleLogging = bd?.Config?.Features?.ChatConsoleLog   ?? false;
+
+        // Optional console mirror. Off by default - BanditChat (or another
+        // chat plugin) typically owns this. Set Features.ChatConsoleLog
+        // to true in config.json if you want BanditDuels to log instead.
+        if (consoleLogging)
+            Console.WriteLine("[Chat] <" + sender.getName() + "> " + message);
 
         // Build the removal list - can't mutate the set while iterating it.
         var recipients = e.getRecipients();
