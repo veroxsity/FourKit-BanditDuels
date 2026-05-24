@@ -1,0 +1,55 @@
+name: nightly
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.cs'
+      - '**/*.csproj'
+      - 'ci-lib/**'
+      - 'build.ps1'
+      - '.github/workflows/nightly.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Stage FourKit reference
+        run: |
+          mkdir -p lib
+          cp ci-lib/Minecraft.Server.FourKit.dll lib/Minecraft.Server.FourKit.dll
+
+      - name: Detect plugin name
+        id: proj
+        run: |
+          csproj=$(ls *.csproj | head -1)
+          name="${csproj%.csproj}"
+          echo "csproj=${csproj}" >> "$GITHUB_OUTPUT"
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: dotnet build "${{ steps.proj.outputs.csproj }}" -c Release
+
+      - name: Compute release metadata
+        id: meta
+        run: |
+          date=$(date -u +'%Y%m%d')
+          sha=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "tag=nightly-${date}-${sha}" >> "$GITHUB_OUTPUT"
+          echo "name=${{ steps.proj.outputs.name }} nightly ${date} (${sha})" >> "$GITHUB_OUTPUT"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.name }}
+          prerelease: true
+          files: bin/Release/net10.0/${{ steps.proj.outputs.name }}.dll

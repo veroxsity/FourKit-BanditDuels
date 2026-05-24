@@ -4,7 +4,10 @@
 # BundleLoader.cs loads the managed deps via AssemblyResolve and extracts the
 # native binary to %TEMP%\BanditDuels-<hash>\ on first DB access.
 
-param([switch]$StopServer)
+param(
+    [switch]$StopServer,
+    [string]$Server
+)
 
 $ErrorActionPreference = 'Stop'
 
@@ -12,7 +15,14 @@ $dotnet = "$env:USERPROFILE\.dotnet\dotnet.exe"
 if (-not (Test-Path $dotnet)) { $dotnet = 'dotnet' }
 
 $plug   = $PSScriptRoot
-$server = Resolve-Path (Join-Path $plug '..\..\Server')
+if ($Server) {
+    $serverPath = $Server
+} elseif ($env:FOURKIT_SERVER) {
+    $serverPath = $env:FOURKIT_SERVER
+} else {
+    $serverPath = Join-Path $plug '..\..\Server'
+}
+$server = (Resolve-Path $serverPath).Path
 
 # Ensure FourKit reference is present in lib/
 $libDll = Join-Path $plug 'lib\Minecraft.Server.FourKit.dll'
@@ -28,7 +38,10 @@ $builtDir   = Join-Path $plug 'bin\Release\net10.0'
 $pluginsDir = Join-Path $server 'plugins'
 
 # Stop server if needed before touching the plugin DLL
-$running = Get-Process -Name 'Minecraft.Server' -ErrorAction SilentlyContinue
+$serverDir = $server.TrimEnd('\','/')
+$running = Get-Process -Name 'Minecraft.Server' -ErrorAction SilentlyContinue | Where-Object {
+    $_.Path -and ([System.IO.Path]::GetDirectoryName($_.Path)).TrimEnd('\','/') -ieq $serverDir
+}
 if ($running) {
     if ($StopServer) {
         Write-Host "Stopping running server (PID $($running.Id))..."
